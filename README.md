@@ -62,9 +62,17 @@ Run local tests with:
 
     python -m pytest
 
+46 tests.
+
 ## Status
 
 Phase 09 (strategy system) — implemented at 1.0.0.
+
+## License
+
+Proprietary — © Entelechy Labs. All rights reserved. No license is granted
+to use, copy, modify, or distribute this software, except as agreed in
+writing with the copyright holder.
 
 ## Publishing authority
 
