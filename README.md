@@ -1,35 +1,72 @@
 # opportunity-analysis
 
-Agent component of the LINKGEN content-intelligence and publishing system.
+Strategy-phase agent of the **LinkGen** content-intelligence and publishing
+system.
 
 ## Purpose
-Agent repository: a specialist content-intelligence agent contributing to the opportunity-analysis stage.
 
-## Ownership
-Owns its implementation, local tests, local documentation, and local version
-history. Does NOT own composition, orchestration, global configuration, or
-system-wide contracts (those belong to the parent repository).
+The specialist agent responsible for identifying content gaps and
+opportunities: it consumes the research phase outputs (`ResearchRequest` plus
+optional `CreatorProfile[]` / `MarketSignal[]`) and produces a
+contract-conforming `OpportunityMap` — original `OpportunityAngle[]` plus the
+carried-over, validated market signals.
 
-## Status
-Foundation scaffold only. Production implementation has NOT begun.
+Design highlights (see `AGENTS.md` in the parent for the master rules):
 
-## Architectural role
-Independently versioned repository composed by the parent. It must depend only
-on explicit shared contracts/interfaces (to be established in Phase 01), never
-on parent or sibling implementation code.
+- **Deterministic by construction** — ids are derived with uuid5
+  (`agent_framework.ids.deterministic_id`), time comes from the injected
+  context clock, and outputs are pure functions of the input. The same
+  request always yields byte-identical artifacts.
+- **LLM output is untrusted** — model JSON arrives router-validated and is
+  sanitized field-by-field before entering contract models; unusable entries
+  (missing title/description) are dropped, duplicates deduped by normalized
+  title, entries capped.
+- **Focus-derived baseline** — when the model yields no usable angle, the
+  agent emits a single angle derived from the request focus itself, so the
+  strategy phase always receives at least one input-derived angle instead of
+  an empty map (never a fabricated claim).
+- **Mock-first ($0 development)** — the default provider is the offline
+  deterministic `MockLLMProvider` via the `ModelRouter`. No network, no
+  credentials, no cost.
+- **No privileged tools** — no publishing/scheduling authority.
 
-## Dependency rules
-- MUST NOT import parent implementation or sibling child implementation.
-- No circular dependencies.
-- Keep provider-specific code behind provider abstractions.
+## Input / output contract
+
+Input (validated against research-phase contracts):
+
+```json
+{"request": {"request_id": "...", "run_id": "...", "focus": "..."},
+ "creators": [{...CreatorProfile...}],
+ "signals": [{...MarketSignal...}]}
+```
+
+`creators` and `signals` are optional; `request` is required.
+
+Output:
+
+```json
+{"opportunity_map": {...OpportunityMap...},
+ "opportunities": [{...OpportunityAngle...}]}
+```
+
+## Boundaries
+
+- Output contracts: `OpportunityMap`, `OpportunityAngle`.
+- Forbidden tools: `publish`, `schedule`, `linkedin-post`.
+- Depends only on `linkgen_contracts`, `linkgen_config`, `agent-framework`,
+  and the `ModelRouter` interface from `providers/llm`.
 
 ## Testing
+
 Run local tests with:
 
     python -m pytest
 
-## Current phase
-Phase 00.5 — child repository bootstrap. No production functionality yet.
+## Status
+
+Phase 09 (strategy system) — implemented at 1.0.0.
 
 ## Publishing authority
-No publishing/scheduling authority; publishing privilege belongs to the publishing subsystem (publisher) only.
+
+No publishing/scheduling authority; publishing privilege belongs to the
+publishing subsystem (publisher) only.
